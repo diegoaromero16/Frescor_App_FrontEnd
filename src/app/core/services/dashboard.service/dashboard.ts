@@ -41,7 +41,7 @@ export class DashboardService {
   }
 
   exportarExcel(pedidos: any[]): void {
-    const headers = ['Direccion', 'Tel', 'Zona', '10,5kg', '4,5kg', '2,5kg', '1,5kg', 'Trit', 'Fecha_Carga', 'Precio_Total', 'FormaPago'];
+    const headers = ['Direccion', 'Tel', 'Zona', '10,5kg', '4,5kg', '2,5kg', '1,5kg', 'Trit', 'Fecha_Carga', 'Precio_Total', 'FormaPago', 'Estado'];
 
     const mapFormaPago = (fp: string): string => {
       if (!fp) return '';
@@ -49,6 +49,13 @@ export class DashboardService {
       if (lower === 'efectivo') return 'EFT';
       if (lower === 'mercadopago') return 'MP';
       return fp;
+    };
+
+    const mapEstado = (estado: string): string => {
+      if (!estado) return '';
+      if (estado === 'Pagado') return 'Pagado';
+      if (estado === 'PagoRechazado') return 'Rechazado';
+      return 'Pendiente';
     };
 
     const rows = pedidos.map(p => [
@@ -62,7 +69,8 @@ export class DashboardService {
       p.triturado,
       p.fecha_Carga || '',
       p.precio_Total,
-      mapFormaPago(p.formaPago)
+      mapFormaPago(p.formaPago),
+      mapEstado(p.estado)
     ]);
 
     const csvContent = ['sep=;', headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
