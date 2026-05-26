@@ -1,0 +1,333 @@
+<app-admin-layout>
+
+    <!-- MENSAJES GLOBALES -->
+    <div class="mensaje-exito" *ngIf="mensajeExito">✅ {{ mensajeExito }}</div>
+
+    <!-- ================================================================ -->
+    <!-- VISTA REPARTIDOR (empleado) — formulario directo en página       -->
+    <!-- ================================================================ -->
+    <ng-container *ngIf="!esAdmin">
+        <div class="page-header">
+            <div>
+                <h2>Cargar deuda</h2>
+                <p>Completá los datos del cliente y los productos no pagados.</p>
+            </div>
+        </div>
+
+        <div class="form-card">
+            <!-- Teléfono + búsqueda -->
+            <div class="form-field">
+                <label>Teléfono del cliente *</label>
+                <div class="telefono-row">
+                    <input type="tel" [(ngModel)]="formTelefono" placeholder="Ej: 3516XXXXXX"
+                        (keydown.enter)="buscarDirecciones()">
+                    <button class="btn-buscar-tel" (click)="buscarDirecciones()" [disabled]="buscandoDirecciones">
+                        {{ buscandoDirecciones ? '...' : 'Buscar' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- DDL dirección -->
+            <div class="form-field" *ngIf="direcciones.length > 0">
+                <label>Dirección *</label>
+                <select [(ngModel)]="direccionSeleccionada" class="select-direccion">
+                    <option [ngValue]="null">— Seleccioná una dirección —</option>
+                    <option *ngFor="let d of direcciones" [ngValue]="d">{{ d.direccion }}</option>
+                </select>
+            </div>
+            <p class="error-busqueda" *ngIf="errorDireccion">{{ errorDireccion }}</p>
+
+            <div class="form-field form-field-fecha">
+                <label>Fecha</label>
+                <input type="date" [(ngModel)]="formFecha">
+            </div>
+
+            <div class="productos-section">
+                <div class="productos-header">
+                    <span class="col-producto">Producto</span>
+                    <span class="col-precio">Precio unit.</span>
+                    <span class="col-cant">Cantidad</span>
+                    <span class="col-sub">Subtotal</span>
+                </div>
+                <div class="producto-row" *ngFor="let b of BOLSAS">
+                    <span class="col-producto">{{ b.label }}</span>
+                    <span class="col-precio text-muted">${{ getPrecioUnitario(b.tipo) | number:'1.2-2' }}</span>
+                    <div class="col-cant">
+                        <input type="number" [(ngModel)]="cantidades[b.tipo]" min="0"
+                            placeholder="0" class="input-cant">
+                    </div>
+                    <span class="col-sub" [class.subtotal-activo]="getSubtotal(b.tipo) > 0">
+                        ${{ getSubtotal(b.tipo) | number:'1.0-0' }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="total-card">
+                <span>Total a cobrar</span>
+                <strong>${{ getTotal() | number:'1.2-2' }}</strong>
+            </div>
+
+            <p class="error" *ngIf="mensajeError">{{ mensajeError }}</p>
+
+            <button class="btn-guardar-full" (click)="guardarBoleta()" [disabled]="guardando">
+                {{ guardando ? 'Guardando...' : 'Generar comprobante' }}
+            </button>
+        </div>
+    </ng-container>
+
+    <!-- ================================================================ -->
+    <!-- VISTA ADMIN — listado completo                                   -->
+    <!-- ================================================================ -->
+    <ng-container *ngIf="esAdmin">
+
+        <!-- ── DEUDORES ── -->
+        <ng-container *ngIf="vistaActual === 'deudores'">
+            <div class="page-header">
+                <div>
+                    <h2>Gestión de deudas</h2>
+                    <p>Clientes con boletas pendientes de pago.</p>
+                </div>
+                <button class="btn-nuevo" (click)="abrirNuevaBoleta()">+ Nueva boleta</button>
+            </div>
+
+            <div class="buscador-card">
+                <div class="buscador-row">
+                    <input type="tel" [(ngModel)]="telefonoBusqueda" placeholder="Buscar por teléfono..."
+                        (keydown.enter)="buscarCliente()">
+                    <button class="btn-buscar" (click)="buscarCliente()">Buscar</button>
+                </div>
+            </div>
+
+            <div class="tabla-wrapper">
+                <div class="tabla-info"><span>{{ deudores.length }} clientes con deuda</span></div>
+                <div class="cargando" *ngIf="cargandoDeudores">Cargando...</div>
+                <div class="tabla-scroll" *ngIf="!cargandoDeudores">
+                    <table class="tabla" *ngIf="deudores.length > 0; else sinDeudores">
+                        <thead>
+                            <tr>
+                                <th>Teléfono</th>
+                                <th>Boletas</th>
+                                <th>Total adeudado</th>
+                                <th>Antigüedad</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let d of deudores" [ngClass]="colorDeudor(d)">
+                                <td>{{ d.telefono }}</td>
+                                <td>{{ d.cantidadBoletas }}</td>
+                                <td>${{ d.totalAdeudado | number:'1.2-2' }}</td>
+                                <td>{{ diasDesde(d.fechaMasAntigua) }} días</td>
+                                <td class="acciones-cell">
+                                    <button class="btn-agregar" (click)="abrirNuevaBoleta(d.telefono)">+ Agregar</button>
+                                    <button class="btn-ver" (click)="verCliente(d.telefono)">Ver boletas</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <ng-template #sinDeudores>
+                        <div class="sin-datos">No hay clientes con deudas pendientes.</div>
+                    </ng-template>
+                </div>
+            </div>
+        </ng-container>
+
+        <!-- ── CLIENTE ── -->
+        <ng-container *ngIf="vistaActual === 'cliente'">
+            <div class="page-header">
+                <div>
+                    <button class="btn-volver" (click)="volverADeudores()">← Volver</button>
+                    <h2>Boletas — {{ telefonoActual }}</h2>
+                    <p *ngIf="totalPendiente() > 0" class="total-pendiente">
+                        Total adeudado: ${{ totalPendiente() | number:'1.2-2' }}
+                    </p>
+                </div>
+                <button class="btn-nuevo" (click)="abrirNuevaBoleta()">+ Nueva boleta</button>
+            </div>
+
+            <div class="cargando" *ngIf="cargandoBoletas">Cargando...</div>
+
+            <div *ngIf="!cargandoBoletas">
+                <div *ngIf="boletas.length === 0" class="sin-datos-card">No hay boletas para este cliente.</div>
+
+                <div class="boleta-card" *ngFor="let b of boletas" [ngClass]="{'boleta-pagada': b.estado === 'Pagada'}">
+                    <div class="boleta-header">
+                        <div class="boleta-meta">
+                            <span class="boleta-fecha">{{ formatFecha(b.fechaBoleta) }}</span>
+                            <span class="boleta-estado"
+                                [ngClass]="b.estado === 'Pagada' ? 'estado-pagada' : 'estado-pendiente'">
+                                {{ b.estado }}
+                            </span>
+                        </div>
+                        <div class="boleta-total">${{ (b.importeConDescuento ?? b.importeTotal) | number:'1.2-2' }}</div>
+                    </div>
+                    <div class="boleta-items" *ngIf="b.items && b.items.length > 0">
+                        <div class="boleta-item" *ngFor="let item of b.items">
+                            <span class="item-tipo">{{ item.tipoBolsa }}</span>
+                            <span class="item-cant">x{{ item.cantidad }}</span>
+                            <span class="item-precio">${{ item.subtotal | number:'1.2-2' }}</span>
+                        </div>
+                        <div class="boleta-item descuento-row"
+                            *ngIf="b.importeConDescuento != null && b.importeConDescuento < b.importeTotal">
+                            <span class="item-tipo descuento-label">Descuento aplicado</span>
+                            <span class="item-cant"></span>
+                            <span class="item-precio descuento-monto">
+                                -${{ (b.importeTotal - b.importeConDescuento) | number:'1.2-2' }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="boleta-footer">
+                        <button class="btn-eliminar" (click)="confirmarEliminar(b)">Eliminar</button>
+                        <button class="btn-pagar" *ngIf="b.estado !== 'Pagada'" (click)="confirmarPago(b)">Marcar como pagada</button>
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+
+    </ng-container>
+
+    <!-- ================================================================ -->
+    <!-- MODAL NUEVA BOLETA (admin)                                       -->
+    <!-- ================================================================ -->
+    <div class="modal-overlay" *ngIf="modalAbierto" (click)="cerrarModal()">
+        <div class="modal modal-boleta" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3>Nueva boleta</h3>
+                <button class="modal-close" (click)="cerrarModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- Teléfono + búsqueda -->
+                <div class="form-field">
+                    <label>Teléfono *</label>
+                    <div class="telefono-row">
+                        <input type="tel" [(ngModel)]="formTelefono" placeholder="Ej: 351XXXXXXX"
+                            (keydown.enter)="buscarDirecciones()">
+                        <button class="btn-buscar-tel" (click)="buscarDirecciones()" [disabled]="buscandoDirecciones">
+                            {{ buscandoDirecciones ? '...' : 'Buscar' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DDL dirección -->
+                <div class="form-field" *ngIf="direcciones.length > 0">
+                    <label>Dirección *</label>
+                    <select [(ngModel)]="direccionSeleccionada" class="select-direccion">
+                        <option [ngValue]="null">— Seleccioná una dirección —</option>
+                        <option *ngFor="let d of direcciones" [ngValue]="d">{{ d.direccion }}</option>
+                    </select>
+                </div>
+                <p class="error-busqueda" *ngIf="errorDireccion">{{ errorDireccion }}</p>
+
+                <div class="form-field">
+                    <label>Fecha</label>
+                    <input type="date" [(ngModel)]="formFecha">
+                </div>
+
+                <div class="productos-section">
+                    <div class="productos-header">
+                        <span class="col-producto">Producto</span>
+                        <span class="col-precio">Precio unit.</span>
+                        <span class="col-cant">Cantidad</span>
+                        <span class="col-sub">Subtotal</span>
+                    </div>
+                    <div class="producto-row" *ngFor="let b of BOLSAS">
+                        <span class="col-producto">{{ b.label }}</span>
+                        <span class="col-precio text-muted">${{ getPrecioUnitario(b.tipo) | number:'1.2-2' }}</span>
+                        <div class="col-cant">
+                            <input type="number" [(ngModel)]="cantidades[b.tipo]" min="0"
+                                placeholder="0" class="input-cant">
+                        </div>
+                        <span class="col-sub" [class.subtotal-activo]="getSubtotal(b.tipo) > 0">
+                            ${{ getSubtotal(b.tipo) | number:'1.0-0' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="total-row">
+                    <span>Total:</span>
+                    <strong>${{ getTotal() | number:'1.2-2' }}</strong>
+                </div>
+
+                <p class="error" *ngIf="mensajeError">{{ mensajeError }}</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancelar" (click)="cerrarModal()">Cancelar</button>
+                <button class="btn-guardar" (click)="guardarBoleta()" [disabled]="guardando">
+                    {{ guardando ? 'Guardando...' : 'Guardar boleta' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- MODAL COMPROBANTE + COMPARTIR                                    -->
+    <!-- ================================================================ -->
+    <div class="modal-overlay" *ngIf="modalComprobanteAbierto" (click)="cerrarComprobante()">
+        <div class="modal modal-comprobante" (click)="$event.stopPropagation()">
+            <div class="modal-header success">
+                <h3>✅ Boleta generada</h3>
+                <button class="modal-close" (click)="cerrarComprobante()">✕</button>
+            </div>
+            <div class="modal-body comprobante-body">
+                <p class="comprobante-hint">Compartí el comprobante con el cliente por WhatsApp.</p>
+                <img *ngIf="comprobanteImgUrl" [src]="comprobanteImgUrl" class="comprobante-img" alt="Comprobante">
+            </div>
+            <div class="modal-footer comprobante-footer">
+                <button class="btn-cancelar" (click)="cerrarComprobante()">Cerrar</button>
+                <button class="btn-whatsapp" (click)="compartirWhatsApp()" [disabled]="compartiendo">
+                    <span *ngIf="!compartiendo">📤 Compartir por WhatsApp</span>
+                    <span *ngIf="compartiendo">Compartiendo...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- MODAL CONFIRMAR PAGO                                             -->
+    <!-- ================================================================ -->
+    <div class="modal-overlay" *ngIf="modalPagoAbierto" (click)="cancelarPago()">
+        <div class="modal modal-confirmar" (click)="$event.stopPropagation()">
+            <div class="modal-header success">
+                <h3>Confirmar pago</h3>
+                <button class="modal-close" (click)="cancelarPago()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>¿Confirmás que esta boleta fue cobrada?</p>
+                <p class="detalle-pago">
+                    Total: <strong>${{ ((boletaAPagar?.importeConDescuento ?? boletaAPagar?.importeTotal) || 0) | number:'1.2-2' }}</strong>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancelar" (click)="cancelarPago()">Cancelar</button>
+                <button class="btn-pagar-confirmar" (click)="marcarPagada()" [disabled]="marcandoPagada">
+                    {{ marcandoPagada ? 'Guardando...' : 'Sí, está pagada' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- MODAL CONFIRMAR ELIMINAR                                         -->
+    <!-- ================================================================ -->
+    <div class="modal-overlay" *ngIf="modalEliminarAbierto" (click)="cancelarEliminar()">
+        <div class="modal modal-confirmar" (click)="$event.stopPropagation()">
+            <div class="modal-header danger">
+                <h3>Eliminar boleta</h3>
+                <button class="modal-close" (click)="cancelarEliminar()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro que querés eliminar esta boleta? Esta acción no se puede deshacer.</p>
+                <p class="detalle-pago">
+                    Total: <strong>${{ ((boletaAEliminar?.importeConDescuento ?? boletaAEliminar?.importeTotal) || 0) | number:'1.2-2' }}</strong>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancelar" (click)="cancelarEliminar()">Cancelar</button>
+                <button class="btn-eliminar-confirmar" (click)="eliminarBoleta()" [disabled]="eliminando">
+                    {{ eliminando ? 'Eliminando...' : 'Sí, eliminar' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+</app-admin-layout>

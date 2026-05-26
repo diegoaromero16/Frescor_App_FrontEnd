@@ -1,0 +1,119 @@
+<app-admin-layout>
+
+    <div class="page-header">
+        <div>
+            <h2>Generar boleta</h2>
+            <p>Buscá el cliente, seleccioná el pedido y generá el comprobante.</p>
+        </div>
+    </div>
+
+    <!-- Búsqueda de teléfono -->
+    <div class="search-card">
+        <div class="telefono-row">
+            <input type="tel" [(ngModel)]="telefono" placeholder="Teléfono del cliente (ej: 3516XXXXXX)"
+                (keydown.enter)="buscar()">
+            <button class="btn-buscar" (click)="buscar()" [disabled]="buscando">
+                {{ buscando ? '...' : 'Buscar' }}
+            </button>
+        </div>
+        @if (errorBusqueda) {
+            <p class="error-busqueda">{{ errorBusqueda }}</p>
+        }
+    </div>
+
+    <!-- Selección de dirección -->
+    @if (direcciones.length > 0) {
+        <div class="address-card">
+            <label class="field-label">Dirección del cliente *</label>
+            <select [(ngModel)]="direccionSeleccionada" class="select-direccion">
+                <option [ngValue]="null">— Seleccioná una dirección —</option>
+                @for (d of direcciones; track d.direccion) {
+                    <option [ngValue]="d">{{ d.direccion }}</option>
+                }
+            </select>
+        </div>
+    }
+
+    @if (mensajeError) {
+        <p class="error-msg">{{ mensajeError }}</p>
+    }
+
+    <!-- Lista de últimos pedidos -->
+    @if (pedidos.length > 0 || cargandoPedidos) {
+        <div class="pedidos-section">
+            <h3 class="seccion-titulo">Últimos pedidos</h3>
+
+            @if (cargandoPedidos) {
+                <div class="cargando">Cargando pedidos...</div>
+            }
+
+            @for (p of pedidos; track p.id) {
+                <div class="pedido-card" [class.pedido-procesado]="boletasGeneradas.has(p.id!)">
+
+                    <div class="pedido-header">
+                        <div class="pedido-meta">
+                            <span class="pedido-fecha">{{ formatFecha(p.fecha_Carga) }}</span>
+                            <span class="pedido-forma-pago">{{ p.formaPago }}</span>
+                        </div>
+                        <div class="pedido-total">${{ getTotalPedido(p) | number:'1.0-0' }}</div>
+                    </div>
+
+                    @if (getItemsPedido(p).length > 0) {
+                        <div class="pedido-items">
+                            @for (item of getItemsPedido(p); track item.tipo) {
+                                <div class="pedido-item">
+                                    <span class="item-tipo">{{ item.tipo }}</span>
+                                    <span class="item-cant">x{{ item.cantidad }}</span>
+                                </div>
+                            }
+                        </div>
+                    } @else {
+                        <div class="sin-items">Sin detalle de bolsas disponible.</div>
+                    }
+
+                    <div class="pedido-footer">
+                        @if (yaGenerada(p)) {
+                            <span class="ya-generado">✅ Boleta generada</span>
+                        } @else {
+                            <button class="btn-generar"
+                                (click)="generarBoleta(p)"
+                                [disabled]="generando && pedidoEnProceso === p">
+                                {{ (generando && pedidoEnProceso === p) ? 'Generando...' : 'Generar boleta' }}
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (!cargandoPedidos && direcciones.length > 0 && pedidos.length === 0) {
+        <div class="sin-pedidos">No se encontraron pedidos recientes para este cliente.</div>
+    }
+
+    <!-- Modal comprobante -->
+    @if (modalComprobanteAbierto) {
+        <div class="modal-overlay" (click)="cerrarComprobante()">
+            <div class="modal modal-comprobante" (click)="$event.stopPropagation()">
+                <div class="modal-header success">
+                    <h3>✅ Boleta generada</h3>
+                    <button class="modal-close" (click)="cerrarComprobante()">✕</button>
+                </div>
+                <div class="modal-body comprobante-body">
+                    <p class="comprobante-hint">Compartí el comprobante con el cliente por WhatsApp.</p>
+                    @if (comprobanteImgUrl) {
+                        <img [src]="comprobanteImgUrl" class="comprobante-img" alt="Comprobante">
+                    }
+                </div>
+                <div class="modal-footer comprobante-footer">
+                    <button class="btn-cancelar" (click)="cerrarComprobante()">Cerrar</button>
+                    <button class="btn-whatsapp" (click)="compartirWhatsApp()" [disabled]="compartiendo">
+                        @if (!compartiendo) { 📤 Compartir por WhatsApp }
+                        @else { Compartiendo... }
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+</app-admin-layout>

@@ -39,6 +39,16 @@
                     <span class="nav-icon">📍</span>
                     <span class="nav-label">Zonas</span>
                 </div>
+                <div class="nav-item" *ngIf="authService.isAdmin()" [class.activo]="estaActivo('/deudas')"
+                    (click)="navegarA('/deudas')">
+                    <span class="nav-icon">💳</span>
+                    <span class="nav-label">Deudas</span>
+                </div>
+                <div class="nav-item" *ngIf="!authService.isAdmin()" [class.activo]="estaActivo('/generar-boleta')"
+                    (click)="navegarA('/generar-boleta')">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">Generar boleta</span>
+                </div>
             </nav>
         </aside>
 

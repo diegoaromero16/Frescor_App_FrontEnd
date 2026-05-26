@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { DashboardService } from '../../core/services/dashboard.service/dashboard';
 import { AuthService } from '../../core/services/auth.service/auth';
 import { AdminLayoutComponent } from '../../layout/admin-layout/admin-layout';
+import { BoletaService } from '../../core/services/boleta.service/boleta.service';
+import { IDeudor } from '../../core/model/boleta/i-boleta';
 
 @Component({
   selector: 'app-dashboard',
@@ -18,6 +20,9 @@ export class DashboardComponent implements OnInit {
   // Métricas
   metricas: any = null;
   cargandoMetricas = false;
+
+  // Deudores
+  deudoresMap: Map<string, IDeudor> = new Map();
 
   // Filtros
   filtros = {
@@ -40,12 +45,14 @@ export class DashboardComponent implements OnInit {
   constructor(
     private dashboardService: DashboardService,
     public authService: AuthService,
-    private router: Router
+    private router: Router,
+    private boletaService: BoletaService
   ) { }
 
   ngOnInit(): void {
     this.cargarMetricas();
     this.cargarPedidos();
+    this.cargarDeudores();
   }
 
   hoyString(): string {
@@ -116,7 +123,11 @@ export class DashboardComponent implements OnInit {
     }).subscribe({
       next: (response) => {
         if (response.success) {
-          this.dashboardService.exportarExcel(response.data.items);
+          const items = response.data.items.map((p: any) => ({
+            ...p,
+            deuda: this.deudoresMap.get(p.telefono)?.cantidadBoletas ?? 0
+          }));
+          this.dashboardService.exportarExcel(items);
         }
       }
     });
@@ -137,5 +148,27 @@ export class DashboardComponent implements OnInit {
   formatMonto(monto: string): string {
     if (!monto) return '$0';
     return `$${parseFloat(monto).toLocaleString('es-AR')}`;
+  }
+
+  cargarDeudores(): void {
+    this.boletaService.getDeudores().subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.deudoresMap = new Map(res.data.map(d => [d.telefono, d]));
+        }
+      }
+    });
+  }
+
+  getDeudor(telefono: string): IDeudor | undefined {
+    return this.deudoresMap.get(telefono);
+  }
+
+  colorFilaPedido(p: any): string {
+    const d = this.deudoresMap.get(p.telefono);
+    if (!d) return '';
+    const dias = Math.floor((Date.now() - new Date(d.fechaMasAntigua).getTime()) / 86400000);
+    if (d.cantidadBoletas >= 2 || dias >= 7) return 'fila-deuda-roja';
+    return 'fila-deuda-naranja';
   }
 }

@@ -25,6 +25,7 @@ export class DashboardService {
     estado?: string;
     pagina?: number;
     tamañoPagina?: number;
+    telefono?: string;
   }): Observable<any> {
     let params = new URLSearchParams();
 
@@ -34,6 +35,7 @@ export class DashboardService {
     if (filtros.zona) params.append('zona', filtros.zona.toString());
     if (filtros.formaPago) params.append('formaPago', filtros.formaPago);
     if (filtros.estado) params.append('estado', filtros.estado);
+    if (filtros.telefono) params.append('telefono', filtros.telefono);
     params.append('pagina', (filtros.pagina || 1).toString());
     params.append('tamañoPagina', (filtros.tamañoPagina || 50).toString());
 
@@ -41,7 +43,7 @@ export class DashboardService {
   }
 
   exportarExcel(pedidos: any[]): void {
-    const headers = ['Direccion', 'Tel', 'Zona', '10,5kg', '4,5kg', '2,5kg', '1,5kg', 'Trit', 'Fecha_Carga', 'Precio_Total', 'FormaPago', 'Estado'];
+    const headers = ['Direccion', 'Tel', 'Zona', '10,5kg', '4,5kg', '2,5kg', '1,5kg', 'Trit', 'Fecha_Carga', 'Precio_Total', 'FormaPago', 'Estado', 'Deudas'];
 
     const mapFormaPago = (fp: string): string => {
       if (!fp) return '';
@@ -68,9 +70,10 @@ export class DashboardService {
       p.kg1_5,
       p.triturado,
       p.fecha_Carga || '',
-      p.precio_Total,
+      p.precio_Total ? String(p.precio_Total).replace('.', ',') : '',
       mapFormaPago(p.formaPago),
-      mapEstado(p.estado)
+      mapEstado(p.estado),
+      p.deuda > 0 ? p.deuda : ''
     ]);
 
     const csvContent = ['sep=;', headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');

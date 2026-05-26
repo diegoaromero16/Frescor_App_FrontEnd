@@ -50,6 +50,18 @@ export const routes: Routes = [
 			import('./pages/zonas/zonas').then(m => m.ZonasComponent)
 	},
 	{
+		path: 'deudas',
+		canActivate: [adminGuard],
+		loadComponent: () =>
+			import('./pages/deudas/deudas').then(m => m.DeudasComponent)
+	},
+	{
+		path: 'generar-boleta',
+		canActivate: [authGuard],
+		loadComponent: () =>
+			import('./pages/generar-boleta/generar-boleta').then(m => m.GenerarBoletaComponent)
+	},
+	{
 		path: '**',
 		redirectTo: ''
 	}

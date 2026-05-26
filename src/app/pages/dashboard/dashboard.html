@@ -121,10 +121,11 @@
                         <th>Zona</th>
                         <th>Pago</th>
                         <th>Estado</th>
+                        <th>Deudas</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let p of pedidos">
+                    <tr *ngFor="let p of pedidos" [ngClass]="colorFilaPedido(p)">
                         <td>{{ p.id }}</td>
                         <td>{{ formatFecha(p.fecha_Carga) }}</td>
                         <td class="direccion-cell">{{ p.direccion }}</td>
@@ -142,6 +143,15 @@
                                 [class.rechazado]="p.estado === 'PagoRechazado'">
                                 {{ p.estado }}
                             </span>
+                        </td>
+                        <td>
+                            @if (getDeudor(p.telefono); as d) {
+                                <span class="deuda-badge"
+                                    [class.deuda-roja]="d.cantidadBoletas >= 2"
+                                    [class.deuda-naranja]="d.cantidadBoletas === 1">
+                                    {{ d.cantidadBoletas }} deuda{{ d.cantidadBoletas > 1 ? 's' : '' }}
+                                </span>
+                            }
                         </td>
                     </tr>
                 </tbody>
