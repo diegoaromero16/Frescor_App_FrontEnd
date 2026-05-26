@@ -1,59 +1,123 @@
-# FrescorApp
+# Frescor App
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.4.
+Angular frontend for **Frescor**, an ice delivery management platform. Handles order creation, customer management, delivery zones, discount coupons, debt tracking, and online payments via Mercado Pago.
 
-## Development server
+The backend is a separate ASP.NET Core Web API connected to an Azure SQL database.
 
-To start a local development server, run:
+---
 
-```bash
-ng serve
-```
+## Features
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- **Orders** — place and manage delivery orders with real-time status tracking
+- **Customers** — manage customer profiles and delivery addresses
+- **Products** — configure product catalog and pricing
+- **Delivery zones** — define and assign geographic delivery areas
+- **Coupons** — create and apply discount codes
+- **Debt management** *(admin)* — track unpaid orders, generate receipts, mark as paid or delete
+- **Generate receipt** *(delivery staff)* — look up a customer's recent orders and generate a shareable receipt via WhatsApp
+- **Payments** — Mercado Pago integration with payment result handling
+- **Role-based access** — separate views and routes for admins and delivery staff
 
-## Code scaffolding
+---
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Tech Stack
 
-```bash
-ng generate component component-name
-```
+| Layer | Technology |
+|---|---|
+| Framework | Angular 21 (standalone components) |
+| UI | Angular Material + Tailwind CSS 4 |
+| PDF / Images | jsPDF + Canvas API |
+| SSR | Angular SSR (Express) |
+| Payments | Mercado Pago |
+| Backend | ASP.NET Core Web API *(separate repo)* |
+| Database | Azure SQL *(database-first)* |
+| Hosting | Azure App Service |
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+---
 
-```bash
-ng generate --help
-```
+## Prerequisites
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+- Node.js 20+
+- npm 8+
+- Angular CLI 21
 
 ```bash
-ng e2e
+npm install -g @angular/cli
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+---
 
-## Additional Resources
+## Getting Started
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/diegoaromero16/Frescor-App.git
+cd Frescor-App
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure the environment
+
+Edit `src/environments/environment.ts` and set your API URL:
+
+```ts
+export const environment = {
+  production: false,
+  apiUrl: 'https://your-api-url/api'
+};
+```
+
+### 4. Run the development server
+
+```bash
+npm start
+```
+
+Open [http://localhost:4200](http://localhost:4200) in your browser.
+
+---
+
+## Build
+
+```bash
+npm run build
+```
+
+Output is placed in `dist/Frescor-App/`.
+
+---
+
+## Project Structure
+
+```
+src/app/
+├── core/
+│   ├── model/          # TypeScript interfaces
+│   ├── services/       # HTTP services (orders, customers, boletas, etc.)
+│   └── guards/         # authGuard, adminGuard
+├── layout/
+│   └── admin-layout/   # Shared shell layout with sidebar
+└── pages/
+    ├── auth/login/
+    ├── dashboard/
+    ├── pedido/
+    ├── clientes/
+    ├── productos/
+    ├── zonas/
+    ├── cupones/
+    ├── deudas/
+    ├── generar-boleta/
+    └── payment-result/
+```
+
+---
+
+## Backend
+
+The API repository is available at [Frescor_Api_v1](https://github.com/ReydelHielo123/Frescor_Api_v1).
