@@ -70,10 +70,7 @@ export class Pedido implements OnInit {
   }
 
   nextStep() {
-    if (this.currentStep() === 2) {
-      if (!this.direccionSeleccionada) {
-        return;
-      }
+    if (this.currentStep() === 2 && this.direccionSeleccionada) {
       this.cuponDescuento = this.direccionSeleccionada.cuponDescuento ?? 0;
       this.aplicarDescuentoCliente();
     }
@@ -226,6 +223,7 @@ export class Pedido implements OnInit {
     return 'Continuar';
   }
   createMPReference(orderId: number) {
+
     this.paymentService
       .crearPreferencia(this.totalPedido, orderId)
       .subscribe({
