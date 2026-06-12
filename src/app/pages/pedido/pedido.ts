@@ -70,7 +70,10 @@ export class Pedido implements OnInit {
   }
 
   nextStep() {
-    if (this.currentStep() === 2 && this.direccionSeleccionada) {
+    if (this.currentStep() === 2) {
+      if (!this.direccionSeleccionada) {
+        return;
+      }
       this.cuponDescuento = this.direccionSeleccionada.cuponDescuento ?? 0;
       this.aplicarDescuentoCliente();
     }

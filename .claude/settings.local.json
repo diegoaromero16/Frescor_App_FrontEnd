@@ -6,7 +6,9 @@
       "Bash(ls \"c:\\\\Users\\\\diego\\\\Documents\\\\Proyectos\")",
       "Read(//c/Users/diego/Documents/Proyectos/**)",
       "Bash(ls \"c:\\\\Users\\\\diego\\\\Documents\")",
-      "Read(//c/Users/diego/Documents/**)"
+      "Read(//c/Users/diego/Documents/**)",
+      "Bash(ls \"C:\\\\Users\\\\diego\\\\source\\\\repos\\\\Frescor_Api_v1\")",
+      "Read(//c/Users/diego/source/repos/Frescor_Api_v1/**)"
     ]
   }
 }
